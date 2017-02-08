@@ -23,7 +23,7 @@ class DatabaseHandler:
             conn.commit()
             return 'recieved'
         except Exception as err:
-            return 'recieve failed: ' + err
+            return 'insert chat failed: ' + err
         finally:
             if conn:
                 conn.close()
@@ -44,6 +44,19 @@ class DatabaseHandler:
                 return "empty"
         except Exception as err:
             return  'Query failed: ' + err
+        finally:
+            if conn:
+                conn.close()
+
+    def createTable(self,*data,**kwargs):
+        try:
+            conn = sqlite3.connect(self.sqlite_file)
+            conn.execute("CREATE TABLE IF NOT EXISTS " + data[0] + '''
+                                    (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                                    username TEXT, message TEXT,date TEXT);''')
+            return 'table created'
+        except Exception as err:
+            return 'Table Creation failed: ' + err
         finally:
             if conn:
                 conn.close()
