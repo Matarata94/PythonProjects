@@ -19,7 +19,7 @@ class DatabaseHandler:
     def insertChatToDB(self, *data, **kwargs):
         try:
             conn = sqlite3.connect(self.sqlite_file)
-            conn.execute("INSERT INTO chats (username,message,date) VALUES ('" + data[0] + "', '" + data[1] + "', '" + data[2] + "')")
+            conn.execute("INSERT INTO " + data[0] + "(username,message,date) VALUES ('" + data[1] + "', '" + data[2] + "', '" + data[3] + "')")
             conn.commit()
             return 'recieved'
         except Exception as err:

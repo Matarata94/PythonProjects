@@ -75,9 +75,8 @@ class ConnectionThread(Thread):
                                 begin = time.time()
                                 self.sock.sendall(dictionaryToJson.encode("utf-8"))
                     # if request from android is for SendingMessage
-                    elif tempJson['requestType'] == 'msg':
-                        insertResult = self.dbObject.insertChatToDB(tempJson['username'], tempJson['msgText'], tempJson['msgDate'])
-                        print(tempJson['msgText'],tempJson['msgDate'])
+                    elif tempJson['requestType'] == 'msgSend':
+                        insertResult = self.dbObject.insertChatToDB('chats_' + tempJson['username'] + '_' + tempJson['opponentUsername'],tempJson['username'], tempJson['msgText'], tempJson['msgDate'])
                         pythonDictionary = {'serverJsonResult': insertResult}
                         dictionaryToJson = json.dumps(pythonDictionary)
                         begin = time.time()
@@ -89,11 +88,13 @@ class ConnectionThread(Thread):
                         tempMessagesHistory = []
                         tempDateHistory = []
                         i=0
+                        #seprating each field of database into a new list
                         while i < len(queryChatsHistory):
                             tempUsernamesHistory.insert(i,queryChatsHistory[i][1])
                             tempMessagesHistory.insert(i,queryChatsHistory[i][2])
                             tempDateHistory.insert(i,queryChatsHistory[i][3])
                             i+=1
+                        #sending usernames, messages and dates lists to android client
                         pythonDictionary = {'serverJsonResult' : 'fetchHistoryChatDone', 'usernamesHistory' : tempUsernamesHistory, 'messagesHistory' : tempMessagesHistory, 'datesHistory' : tempDateHistory}
                         dictionaryToJson = json.dumps(pythonDictionary)
                         begin = time.time()

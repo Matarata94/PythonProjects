@@ -17,7 +17,7 @@ class ChatServer:
         self.serversocket.close()
 
 if __name__ == "__main__":
-    chatObj = ChatServer('', 4004)
+    chatObj = ChatServer('', 4000)
     chatObj.socketBinding()
     while True:
         clientsocket, addr = chatObj.serversocket.accept()
