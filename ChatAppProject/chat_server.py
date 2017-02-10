@@ -13,12 +13,14 @@ class ChatServer:
         self.serversocket.listen(5)
         print('Socket binded to: ' + self.host + ':' + str(self.port))
 
+    def socketClose(self):
+        self.serversocket.close()
+
 if __name__ == "__main__":
-    chatObj = ChatServer('', 4000)
+    chatObj = ChatServer('', 4004)
     chatObj.socketBinding()
     while True:
         clientsocket, addr = chatObj.serversocket.accept()
 
         print("Got a connection from " + str(addr))
         conThreadObj = ConnectionThread(clientsocket,addr, 4096)
-

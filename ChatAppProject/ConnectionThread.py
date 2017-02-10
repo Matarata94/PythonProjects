@@ -6,7 +6,7 @@ from ChatAppProject.Database import *
 
 
 class ConnectionThread(Thread):
-    strRecieved=[]
+    strReceived=[]
     def __init__(self, socket, address, recieveBuffer):
         Thread.__init__(self)
         self.sock = socket
@@ -22,7 +22,7 @@ class ConnectionThread(Thread):
     def stopped(self):
         return self._stop.isSet()
 
-    def run(self, timeout=40):
+    def run(self, timeout=70):
         self.sock.setsockopt(sc.IPPROTO_TCP, sc.TCP_NODELAY, 1)
         self.sock.setblocking(0)
         begin = time.time()
@@ -32,9 +32,9 @@ class ConnectionThread(Thread):
 
             try:
                 #recieve data from ClientSocket
-                self.strRecieved = self.sock.recv(self.recieveBuffer).decode('utf-8')
-                if self.strRecieved:
-                    tempJson = json.loads(self.strRecieved)
+                self.strReceived = self.sock.recv(self.recieveBuffer).decode('utf-8')
+                if self.strReceived:
+                    tempJson = json.loads(self.strReceived)
                     #if request from android is for Register
                     if tempJson['requestType'] == 'register':
                         #check if username already exist
@@ -42,10 +42,10 @@ class ConnectionThread(Thread):
                         #if username not exist, create a new user and a table for his chats with his opponet and send success message to android
                         if queryUsername == 'empty':
                             insertResult = self.dbObject.insertUserToDB(tempJson['username'], tempJson['password'])
-                            #print(insertResult + "--> Username: " + tempJson['username'] + " , Password: " + tempJson['password'])
-                            tableCreationResult = self.dbObject.createTable('chats_' + tempJson['username'] + '_' + tempJson['oppponentUsername'])
+                            print(insertResult + "--> Username: " + tempJson['username'] + " , Password: " + tempJson['password'])
+                            tableCreationResult = self.dbObject.createTable('chats_' + tempJson['username'] + '_' + tempJson['opponentUsername'])
                             #check if new user created and also his table is created or not
-                            if insertResult == 'inserted' & tableCreationResult == 'table created':
+                            if 'inserted' in insertResult & tableCreationResult == 'table created':
                                 pythonDictionary = {'serverJsonResult': 'registerDone'}
                                 dictionaryToJson = json.dumps(pythonDictionary)
                                 begin = time.time()
@@ -58,15 +58,23 @@ class ConnectionThread(Thread):
                         #if username exist then check if password is correct or not and send a success or fail message to android
                         elif queryUsername != "empty":
                             if queryUsername[2] == tempJson['password']:
-                                pythonDictionary = {'serverJsonResult': 'identified'}
-                                dictionaryToJson = json.dumps(pythonDictionary)
-                                begin = time.time()
-                                self.sock.sendall(dictionaryToJson.encode("utf-8"))
+                                tableCreationResult = self.dbObject.createTable('chats_' + tempJson['username'] + '_' + tempJson['opponentUsername'])
+                                if tableCreationResult == 'table created':
+                                    pythonDictionary = {'serverJsonResult': 'identified'}
+                                    dictionaryToJson = json.dumps(pythonDictionary)
+                                    begin = time.time()
+                                    self.sock.sendall(dictionaryToJson.encode("utf-8"))
+                                else:
+                                    pythonDictionary = {'serverJsonResult': 'Table Creation failed'}
+                                    dictionaryToJson = json.dumps(pythonDictionary)
+                                    begin = time.time()
+                                    self.sock.sendall(dictionaryToJson.encode("utf-8"))
                             elif queryUsername[2] != tempJson['password']:
                                 pythonDictionary = {'serverJsonResult': 'identify_failed'}
                                 dictionaryToJson = json.dumps(pythonDictionary)
                                 begin = time.time()
                                 self.sock.sendall(dictionaryToJson.encode("utf-8"))
+                    # if request from android is for SendingMessage
                     elif tempJson['requestType'] == 'msg':
                         insertResult = self.dbObject.insertChatToDB(tempJson['username'], tempJson['msgText'], tempJson['msgDate'])
                         print(tempJson['msgText'],tempJson['msgDate'])
@@ -74,20 +82,19 @@ class ConnectionThread(Thread):
                         dictionaryToJson = json.dumps(pythonDictionary)
                         begin = time.time()
                         self.sock.sendall(dictionaryToJson.encode("utf-8"))
-                    elif tempJson['requestType'] == 'chatData':
-                        queryClient1Chats = self.dbObject.queryFromDB('chats','username',tempJson['username'],'chatData')
-                        queryClient2Chats = self.dbObject.queryFromDB('chats', 'username', tempJson['opponentUsername'],'chatData')
-                        i = 0
-                        tempClient1Chats = []
-                        tempClient2Chats = []
-                        while len(queryClient1Chats) > i:
-                            tempClient1Chats.insert(i,queryClient1Chats[i][2])
+                    # if request from android is for ChatsHistoryData
+                    elif tempJson['requestType'] == 'chatHistoryData':
+                        queryChatsHistory = self.dbObject.queryWholeTable('chats_' + tempJson['username'] + '_' + tempJson['opponentUsername'])
+                        tempUsernamesHistory = []
+                        tempMessagesHistory = []
+                        tempDateHistory = []
+                        i=0
+                        while i < len(queryChatsHistory):
+                            tempUsernamesHistory.insert(i,queryChatsHistory[i][1])
+                            tempMessagesHistory.insert(i,queryChatsHistory[i][2])
+                            tempDateHistory.insert(i,queryChatsHistory[i][3])
                             i+=1
-                        i = 0
-                        while len(queryClient2Chats) > i:
-                            tempClient2Chats.insert(i,queryClient2Chats[i][2])
-                            i+=1
-                        pythonDictionary = {'serverJsonResult' : 'done', 'client1ChatsData' : tempClient1Chats, 'client2ChatsData' : tempClient2Chats}
+                        pythonDictionary = {'serverJsonResult' : 'fetchHistoryChatDone', 'usernamesHistory' : tempUsernamesHistory, 'messagesHistory' : tempMessagesHistory, 'datesHistory' : tempDateHistory}
                         dictionaryToJson = json.dumps(pythonDictionary)
                         begin = time.time()
                         self.sock.sendall(dictionaryToJson.encode("utf-8"))

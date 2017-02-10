@@ -48,6 +48,22 @@ class DatabaseHandler:
             if conn:
                 conn.close()
 
+    def queryWholeTable(self, *data, **kwargs):
+        try:
+            conn = sqlite3.connect(self.sqlite_file)
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM ' + data[0])
+            returnData = cur.fetchall()
+            if returnData:
+                return returnData
+            else:
+                return "empty"
+        except Exception as err:
+            return  'QueryAll failed: ' + err
+        finally:
+            if conn:
+                conn.close()
+
     def createTable(self,*data,**kwargs):
         try:
             conn = sqlite3.connect(self.sqlite_file)
