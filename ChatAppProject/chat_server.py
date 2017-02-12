@@ -23,4 +23,4 @@ if __name__ == "__main__":
         clientsocket, addr = chatObj.serversocket.accept()
 
         print("Got a connection from " + str(addr))
-        conThreadObj = ConnectionThread(clientsocket,addr, 4096)
+        conThreadObj = ConnectionThread(clientsocket,addr, 8192)
